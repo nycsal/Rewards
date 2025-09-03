@@ -1,1 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KakaReza Tasks</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap');
+    body { font-family: 'Fredoka', sans-serif; margin:0; background: linear-gradient(120deg, #f8d7e0 10%, #e0f7fa 90%);}
+    header { text-align:center; background:#ff6f61; color:#fff; padding:22px; font-size:2.1em; border-radius:0 0 24px 24px; box-shadow:0 5px 18px #0001; animation:fadeIn 1.2s;}
+    main { max-width:1050px; margin:auto; padding:24px;}
+    .section { background: #fff8; border-radius:20px; box-shadow:0 8px 28px #0002; margin-bottom:30px; padding:22px; animation:fadeInUp .9s;}
+    h2 { margin-top:0; }
+    .member-list, .dashboard-list { display:flex; flex-wrap:wrap; gap:14px;}
+    .member { flex:1 0 210px; background:#eafff7; padding:15px 18px; border-radius:12px; box-shadow:0 2px 7px #0001; cursor:pointer; transition:.28s; font-weight:600;}
+    .member:hover, .selected { background:#cdf0ea;}
+    button, select, input[type="text"], input[type="date"] { margin:7px 2px; padding:10px; border-radius:8px; border:none; font-size:1.05em;}
+    button { background:#ff6f61; color:#fff; cursor:pointer; font-weight: 700;}
+    button:hover, .complete-btn:hover { background:#ff3b2f;}
+    input[type='range'] { width:120px;}
+    .hearts { color:#ff4a3a; font-size:1.15em; display:inline-block; font-weight:900; vertical-align:-2px; animation:pulse .9s infinite alternate;}
+    .task { display:flex; justify-content:space-between; align-items:center; background:#f5fff7; padding:10px 8px; margin:10px 0; border-radius:12px; box-shadow:0 1px 5px #0001;}
+    .complete-btn { background:#35c77e; }
+    .summary { font-size:1.24em; color:#352;}
+    .pb-container{ background:#d3f1e7; border-radius:7px; width:90%; height:12px; overflow:hidden; margin:6px 0;}
+    .pb-bar{height:100%; background:linear-gradient(90deg,#ff6f61 40%,#f5f52d 100%); width:0;}
+    .reward{color:#ffae00;font-weight:700; animation:rewardpop 1.3s;}
+    @keyframes fadeIn { 0%{opacity:0;} 100%{opacity:1;} }
+    @keyframes fadeInUp { 0%{opacity:0;transform:translateY(30px);} 100%{opacity:1;transform:translateY(0);} }
+    @keyframes pulse { from{transform:scale(1);} to{transform:scale(1.14);} }
+    @keyframes rewardpop {0%{transform:scale(1)}30%{transform:scale(1.26)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
+    @media (max-width:700px){
+      main{padding:8px;}
+      .member-list,.dashboard-list{flex-direction:column;gap:8px;}
+    }
+  </style>
+</head>
+<body>
+<header>KakaReza Tasks</header>
+<main>
+  <div class="section">
+    <h2>Add a Family Member</h2>
+    <input type="text" id="memberName" placeholder="Enter name"/>
+    <button onclick="addMember()">Add Member</button>
+    <ul class="member-list" id="memberList"></ul>
+  </div>
+  <div class="section" id="choreSection" style="display:none">
+    <h2>Assign Chore to <span id="selectedMemberName"></span></h2>
+    <label><b>Chore:</b> </label>
+    <select id="choreSelect"></select><br/>
+    <label><b>Difficulty (Hearts):</b> <span id="rangeVal">5</span> </label>
+    <input type="range" min="1" max="10" value="5" id="difficultyRange" oninput="updateSlider(this.value)">
+    <span class="hearts" id="heartsDisplay">❤️❤️❤️❤️❤️</span><br>
+    <label>Due Date: </label>
+    <input type="date" id="dueDate"/>
+    <button onclick="assignChore()">Assign Chore</button>
+    <div id="assignedTasks"></div>
+  </div>
+  <div class="section">
+    <h2>Family Dashboard</h2>
+    <label><b>Set Reward Hearts:</b></label>
+    <input type="number" id="rewardInput" min="1" max="999" value="30" style="width:62px">
+    <label>🎁 Reward (e.g. Movie Night, Allowance, Treat):</label>
+    <input type="text" id="rewardNameInput" value="Family Movie Night" style="width:180px">
+    <button onclick="saveRewardSettings()">Save Reward</button>
+    <div class="dashboard-list" id="summaryList"></div>
+  </div>
+</main>
+<script>
+let choreList = [
+"Make your bed","Feed the pets","Pick up toys","Brush teeth","Put away dirty clothes","Set the table","Clear the table","Water houseplants","Pack backpack","Sweep kitchen","Wipe counters","Help with groceries","Fold laundry","Put away clean dishes","Take out trash","Recycling","Dust shelves","Match socks","Brush hair","Help unpack groceries","Organize shoes","Help mom with shopping list","Help dad put tools away","Sharpen pencils","Straighten couch cushions","Wipe doorknobs","Help make lunch","Help pack snacks","Load dishwasher","Unload dishwasher","Wipe mirrors","Tidy entryway","Help sweep porch","Feed fish","Brush dog/cat","Rake leaves","Pick up sticks in yard","Weed garden","Water outside plants","Sweep garage","Clean car handles","Wipe table","Help mom sort mail","Help dad collect laundry","Make sibling’s bed","Sort socks","Wipe baseboards","Pick up yard toys","Put napkins on table","Take dirty towels to laundry","Empty small trash cans",
+"Fill pet water bowl","Wipe up spills","Fold towels","Help put away groceries","Straighten play area","Clean up arts+crafts","Put sports kits away","Stack books neatly","Polish shoes","Rinse bath toys","Wash fruit & veggies","Turn off TV when done","Help dad sweep patio","Pick up after picnic","Help mom check lists","Offer water to guests","Shake out mats","Wipe refrigerator handles","Practice reading to parent","Make lunch for school","Wipe appliance fronts","Help dad pull weeds","Help mom water garden","Sweep walkways","Collect sticks in yard","Organize DVDs/games","Help dad with computer","Help mom sort recycling","Make cards for family","Brush doormat","Care for indoor plants","Pick up fallen leaves","Fill bird feeder","Organize board games","Help mom cook dinner","Help dad check garage","Get the mail","Put dishes in sink","Help prep salad","Tidy bathroom counter","Wash windows (low)","Empty lunchbox after school","Help dad with emails","Help mom with phone calls","Organize magazine rack","Help dad carry tools","Tidy shoes at door","Carry groceries up steps","Pat dog/cat gently"
+];
+
+let members = {};
+let selectedMember = null;
+let rewardTarget = parseInt(localStorage.getItem('kakar-rewardTarget')) || 30;
+let rewardName = localStorage.getItem('kakar-rewardName') || "Family Movie Night";
+
+// Load from localStorage
+if(localStorage.getItem('kakar-members')) members = JSON.parse(localStorage.getItem('kakar-members'));
+
+// Populate chore dropdown
+const choreSelect = document.getElementById('choreSelect');
+function fillChores(){
+  choreSelect.innerHTML = "";
+  choreList.forEach(chore=>{
+    let opt = document.createElement('option');
+    opt.textContent = chore;
+    choreSelect.appendChild(opt);
+  });
+}
+fillChores();
+
+// Hearts slider logic
+function updateSlider(val){
+  document.getElementById('rangeVal').innerText = val;
+  document.getElementById('heartsDisplay').innerHTML = "❤️".repeat(val);
+}
+updateSlider(document.getElementById('difficultyRange').value);
+
+// Save to localStorage
+function saveMembers(){ localStorage.setItem('kakar-members',JSON.stringify(members)); }
+function saveRewardSettings(){
+  rewardTarget = parseInt(document.getElementById('rewardInput').value)||1;
+  rewardName = document.getElementById('rewardNameInput').value||'Reward!';
+  localStorage.setItem('kakar-rewardTarget',rewardTarget);
+  localStorage.setItem('kakar-rewardName',rewardName);
+  updateSummary();
+  alert("Reward/goal has been updated!");
+}
+
+function addMember(){
+  const name = document.getElementById('memberName').value.trim();
+  if(!name || members[name]) return;
+  members[name] = { tasks:[], hearts:0, reward:false };
+  saveMembers();
+  updateMemberList();
+  updateSummary();
+  document.getElementById('memberName').value = '';
+}
+function updateMemberList(){
+  let container = document.getElementById('memberList');
+  container.innerHTML = "";
+  Object.keys(members).forEach(name=>{
+    let div = document.createElement('li');
+    div.className = "member" + (selectedMember===name ? " selected" : "");
+    div.textContent = name;
+    div.onclick = ()=> selectMember(name);
+    container.appendChild(div);
+  });
+}
+function selectMember(name){
+  selectedMember = name;
+  document.getElementById('selectedMemberName').textContent = name;
+  document.getElementById('choreSection').style.display = 'block';
+  updateMemberList();
+  updateTaskList();
+}
+function assignChore(){
+  const taskName = document.getElementById('choreSelect').value;
+  const due = document.getElementById('dueDate').value;
+  const difficulty = parseInt(document.getElementById('difficultyRange').value);
+  if(!selectedMember || !taskName) return;
+  let chore = { name:taskName, assigned:(new Date()).toLocaleDateString(), due:due, difficulty:difficulty, completed:false };
+  members[selectedMember].tasks.push(chore);
+  saveMembers();
+  updateTaskList();
+  updateSummary();
+}
+function updateTaskList(){
+  const container = document.getElementById('assignedTasks');
+  container.innerHTML = "";
+  members[selectedMember].tasks.forEach((task,i)=>{
+    let div = document.createElement('div');
+    div.className = 'task';
+    let hearts = "❤️".repeat(task.difficulty);
+    div.innerHTML = `<div>
+      <strong>${task.name}</strong> <br>
+      <span class="hearts">${hearts}</span>
+      <small>(Assigned ${task.assigned}${task.due?`, Due: ${task.due}`:""})</small>
+    </div>`;
+    if(!task.completed){
+      let btn = document.createElement('button');
+      btn.textContent = 'Mark Complete';
+      btn.className = 'complete-btn';
+      btn.onclick = ()=> markComplete(i);
+      div.appendChild(btn);
+    } else {
+      div.innerHTML += `<div class="hearts">✅ Completed</div>`;
+    }
+    container.appendChild(div);
+  });
+}
+function markComplete(idx){
+  let task = members[selectedMember].tasks[idx];
+  if(!task.completed){
+    task.completed = true;
+    members[selectedMember].hearts += task.difficulty;
+    // Check for reward:
+    if(members[selectedMember].hearts >= rewardTarget && !members[selectedMember].reward){
+      members[selectedMember].reward = true;
+      setTimeout(()=>alert(`${selectedMember} earned enough hearts! 🎉 Reward: ${rewardName}`), 150);
+    }
+  }
+  saveMembers();
+  updateTaskList();
+  updateSummary();
+}
+
+// Dashboard with progress bar and reward triggers
+function updateSummary(){
+  document.getElementById('rewardInput').value = rewardTarget;
+  document.getElementById('rewardNameInput').value = rewardName;
+  let container = document.getElementById('summaryList');
+  container.innerHTML = "";
+  Object.keys(members).forEach(name=>{
+    let heartsEarned = members[name].hearts||0;
+    let progressPerc = Math.min(heartsEarned/rewardTarget,1)*100;
+    let rewardGot = !!members[name].reward && heartsEarned>=rewardTarget;
+    let outer = document.createElement('div');
+    outer.className = "member";
+    let bar = `<div class="pb-container"><div class="pb-bar" style="width:${progressPerc}%;"></div></div>`;
+    outer.innerHTML = `<b>${name}</b><br>
+      <span class="hearts">${"❤️".repeat(Math.min(heartsEarned,30))}</span>
+      <br>Hearts: <b>${heartsEarned}</b> / ${rewardTarget}
+      ${bar}
+      ${rewardGot ? `<div class="reward">🎁 ${rewardName} unlocked!</div>`:""}`;
+    container.appendChild(outer);
+  });
+  // Animate progress bars:
+  setTimeout(() => {
+    document.querySelectorAll('.pb-bar').forEach(bar=>{
+      bar.style.transition = 'width 1s cubic-bezier(.4,2,.6,1)';
+    });
+  },30);
+}
+updateMemberList();
+updateSummary();
+</script>
+</body>
+</html>
 
