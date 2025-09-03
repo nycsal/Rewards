@@ -11,17 +11,33 @@
     main { max-width:1050px; margin:auto; padding:24px;}
     .section { background: #fff8; border-radius:20px; box-shadow:0 8px 28px #0002; margin-bottom:30px; padding:22px; animation:fadeInUp .9s;}
     h2 { margin-top:0; }
-    .member-list, .dashboard-list { display:flex; flex-wrap:wrap; gap:14px;}
-    .member { flex:1 0 210px; background:#eafff7; padding:15px 18px; border-radius:12px; box-shadow:0 2px 7px #0001; cursor:pointer; transition:.28s; font-weight:600;}
-    .member:hover, .selected { background:#cdf0ea;}
-    button, select, input[type="text"], input[type="date"] { margin:7px 2px; padding:10px; border-radius:8px; border:none; font-size:1.05em;}
-    button { background:#ff6f61; color:#fff; cursor:pointer; font-weight: 700;}
-    button:hover, .complete-btn:hover { background:#ff3b2f;}
+    .member-list { display:flex; flex-wrap:wrap; gap:12px;}
+    .member-btn {
+      display:inline-block; padding:8px 18px;
+      border-radius: 18px; box-shadow:0 1px 5px #0001;
+      cursor:pointer; font-weight:600; margin:2px;
+      border: none;
+      transition: background 0.18s, color 0.18s, transform .11s;
+      font-size:1em;
+      min-width: 0; width:auto;
+      outline: none;
+      color: white;
+      /* colors set inline */
+    }
+    .member-btn.selected {
+      border: 2.5px solid #2228;
+      transform: scale(1.06);
+    }
+    .member-btn:active {transform:scale(.96);}
+
+    button, select, input[type="text"], input[type="date"], input[type="number"] { margin:7px 2px; padding:10px; border-radius:8px; border:none; font-size:1.05em;}
+    button:not(.member-btn) { background:#ff6f61; color:#fff; cursor:pointer; font-weight: 700;}
+    button:not(.member-btn):hover { background:#ff3b2f;}
     input[type='range'] { width:120px;}
-    .hearts { color:#ff4a3a; font-size:1.15em; display:inline-block; font-weight:900; vertical-align:-2px; animation:pulse .9s infinite alternate;}
+    .hearts { color:#ff4a3a; font-size:1.13em; display:inline-block; font-weight:900; vertical-align:-2px; animation:pulse .9s infinite alternate;}
     .task { display:flex; justify-content:space-between; align-items:center; background:#f5fff7; padding:10px 8px; margin:10px 0; border-radius:12px; box-shadow:0 1px 5px #0001;}
-    .complete-btn { background:#35c77e; }
-    .summary { font-size:1.24em; color:#352;}
+    .complete-btn { background:#35c77e; color: white;}
+    .summary { font-size:1.23em; color:#352;}
     .pb-container{ background:#d3f1e7; border-radius:7px; width:90%; height:12px; overflow:hidden; margin:6px 0;}
     .pb-bar{height:100%; background:linear-gradient(90deg,#ff6f61 40%,#f5f52d 100%); width:0;}
     .reward{color:#ffae00;font-weight:700; animation:rewardpop 1.3s;}
@@ -31,8 +47,12 @@
     @keyframes rewardpop {0%{transform:scale(1)}30%{transform:scale(1.26)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
     @media (max-width:700px){
       main{padding:8px;}
-      .member-list,.dashboard-list{flex-direction:column;gap:8px;}
+      .member-list{flex-direction:column;gap:6px;}
     }
+    /* Hide number arrows for input[type=number] on mobile */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
   </style>
 </head>
 <body>
@@ -40,9 +60,12 @@
 <main>
   <div class="section">
     <h2>Add a Family Member</h2>
-    <input type="text" id="memberName" placeholder="Enter name"/>
+    <input type="text" id="memberName" placeholder="Enter name" style="width:170px"/>
+    <input type="text" id="giftName" placeholder="Reward/Gift (e.g. Bike)" style="width:130px"/>
+    <input type="number" id="memberRewardTarget" min="1" max="999" value="30" style="width:70px" />
     <button onclick="addMember()">Add Member</button>
-    <ul class="member-list" id="memberList"></ul>
+    <br><small>Each member: Name, their dream reward, and hearts needed!</small>
+    <div class="member-list" id="memberList"></div>
   </div>
   <div class="section" id="choreSection" style="display:none">
     <h2>Assign Chore to <span id="selectedMemberName"></span></h2>
@@ -58,27 +81,28 @@
   </div>
   <div class="section">
     <h2>Family Dashboard</h2>
-    <label><b>Set Reward Hearts:</b></label>
-    <input type="number" id="rewardInput" min="1" max="999" value="30" style="width:62px">
-    <label>🎁 Reward (e.g. Movie Night, Allowance, Treat):</label>
-    <input type="text" id="rewardNameInput" value="Family Movie Night" style="width:180px">
-    <button onclick="saveRewardSettings()">Save Reward</button>
     <div class="dashboard-list" id="summaryList"></div>
   </div>
 </main>
 <script>
 let choreList = [
-"Make your bed","Feed the pets","Pick up toys","Brush teeth","Put away dirty clothes","Set the table","Clear the table","Water houseplants","Pack backpack","Sweep kitchen","Wipe counters","Help with groceries","Fold laundry","Put away clean dishes","Take out trash","Recycling","Dust shelves","Match socks","Brush hair","Help unpack groceries","Organize shoes","Help mom with shopping list","Help dad put tools away","Sharpen pencils","Straighten couch cushions","Wipe doorknobs","Help make lunch","Help pack snacks","Load dishwasher","Unload dishwasher","Wipe mirrors","Tidy entryway","Help sweep porch","Feed fish","Brush dog/cat","Rake leaves","Pick up sticks in yard","Weed garden","Water outside plants","Sweep garage","Clean car handles","Wipe table","Help mom sort mail","Help dad collect laundry","Make sibling’s bed","Sort socks","Wipe baseboards","Pick up yard toys","Put napkins on table","Take dirty towels to laundry","Empty small trash cans",
-"Fill pet water bowl","Wipe up spills","Fold towels","Help put away groceries","Straighten play area","Clean up arts+crafts","Put sports kits away","Stack books neatly","Polish shoes","Rinse bath toys","Wash fruit & veggies","Turn off TV when done","Help dad sweep patio","Pick up after picnic","Help mom check lists","Offer water to guests","Shake out mats","Wipe refrigerator handles","Practice reading to parent","Make lunch for school","Wipe appliance fronts","Help dad pull weeds","Help mom water garden","Sweep walkways","Collect sticks in yard","Organize DVDs/games","Help dad with computer","Help mom sort recycling","Make cards for family","Brush doormat","Care for indoor plants","Pick up fallen leaves","Fill bird feeder","Organize board games","Help mom cook dinner","Help dad check garage","Get the mail","Put dishes in sink","Help prep salad","Tidy bathroom counter","Wash windows (low)","Empty lunchbox after school","Help dad with emails","Help mom with phone calls","Organize magazine rack","Help dad carry tools","Tidy shoes at door","Carry groceries up steps","Pat dog/cat gently"
+"Make your bed","Feed the pets","Pick up toys","Brush teeth","Put away dirty clothes","Set the table","Clear the table","Water houseplants","Pack backpack","Sweep kitchen","Wipe counters","Help with groceries","Fold laundry","Put away clean dishes","Take out trash","Recycling","Dust shelves","Match socks","Brush hair","Help unpack groceries","Organize shoes","Help mom with shopping list","Help dad put tools away","Sharpen pencils","Straighten couch cushions","Wipe doorknobs","Help make lunch","Help pack snacks","Load dishwasher","Unload dishwasher","Wipe mirrors","Tidy entryway","Help sweep porch","Feed fish","Brush dog/cat","Rake leaves","Pick up sticks in yard","Weed garden","Water outside plants","Sweep garage","Clean car handles","Wipe table","Help mom sort mail","Help dad collect laundry","Make sibling’s bed","Sort socks","Wipe baseboards","Pick up yard toys","Put napkins on table","Take dirty towels to laundry","Empty small trash cans","Fill pet water bowl","Wipe up spills","Fold towels","Help put away groceries","Straighten play area","Clean up arts+crafts","Put sports kits away","Stack books neatly","Polish shoes","Rinse bath toys","Wash fruit & veggies","Turn off TV when done","Help dad sweep patio","Pick up after picnic","Help mom check lists","Offer water to guests","Shake out mats","Wipe refrigerator handles","Practice reading to parent","Make lunch for school","Wipe appliance fronts","Help dad pull weeds","Help mom water garden","Sweep walkways","Collect sticks in yard","Organize DVDs/games","Help dad with computer","Help mom sort recycling","Make cards for family","Brush doormat","Care for indoor plants","Pick up fallen leaves","Fill bird feeder","Organize board games","Help mom cook dinner","Help dad check garage","Get the mail","Put dishes in sink","Help prep salad","Tidy bathroom counter","Wash windows (low)","Empty lunchbox after school","Help dad with emails","Help mom with phone calls","Organize magazine rack","Help dad carry tools","Tidy shoes at door","Carry groceries up steps","Pat dog/cat gently"
 ];
+
+// Distinct colors for user "buttons"
+function getColorForIndex(i){
+  const colors = [
+    "#ff6561","#67b7dc","#ffae00","#62b482",
+    "#d456c2","#4fc9c2","#cb8db0","#e38a26","#7d7aec","#cb573e"
+  ];
+  return colors[i%colors.length];
+}
 
 let members = {};
 let selectedMember = null;
-let rewardTarget = parseInt(localStorage.getItem('kakar-rewardTarget')) || 30;
-let rewardName = localStorage.getItem('kakar-rewardName') || "Family Movie Night";
 
 // Load from localStorage
-if(localStorage.getItem('kakar-members')) members = JSON.parse(localStorage.getItem('kakar-members'));
+if(localStorage.getItem('kakar-members2')) members = JSON.parse(localStorage.getItem('kakar-members2'));
 
 // Populate chore dropdown
 const choreSelect = document.getElementById('choreSelect');
@@ -100,34 +124,35 @@ function updateSlider(val){
 updateSlider(document.getElementById('difficultyRange').value);
 
 // Save to localStorage
-function saveMembers(){ localStorage.setItem('kakar-members',JSON.stringify(members)); }
-function saveRewardSettings(){
-  rewardTarget = parseInt(document.getElementById('rewardInput').value)||1;
-  rewardName = document.getElementById('rewardNameInput').value||'Reward!';
-  localStorage.setItem('kakar-rewardTarget',rewardTarget);
-  localStorage.setItem('kakar-rewardName',rewardName);
-  updateSummary();
-  alert("Reward/goal has been updated!");
-}
+function saveMembers(){ localStorage.setItem('kakar-members2',JSON.stringify(members)); }
 
 function addMember(){
   const name = document.getElementById('memberName').value.trim();
+  const gift = document.getElementById('giftName').value.trim() || "Surprise!";
+  const rewardTarget = parseInt(document.getElementById('memberRewardTarget').value) || 30;
   if(!name || members[name]) return;
-  members[name] = { tasks:[], hearts:0, reward:false };
+  let color = getColorForIndex(Object.keys(members).length);
+  members[name] = { tasks:[], hearts:0, reward:false, gift:gift, rewardTarget:rewardTarget, color:color };
   saveMembers();
   updateMemberList();
   updateSummary();
+  // Clear inputs after adding
   document.getElementById('memberName').value = '';
+  document.getElementById('giftName').value = '';
+  document.getElementById('memberRewardTarget').value = '30';
 }
 function updateMemberList(){
   let container = document.getElementById('memberList');
   container.innerHTML = "";
+  let idx = 0;
   Object.keys(members).forEach(name=>{
-    let div = document.createElement('li');
-    div.className = "member" + (selectedMember===name ? " selected" : "");
-    div.textContent = name;
-    div.onclick = ()=> selectMember(name);
-    container.appendChild(div);
+    let btn = document.createElement('button');
+    btn.className = "member-btn" + (selectedMember===name ? " selected" : "");
+    btn.textContent = name;
+    btn.style.background = members[name].color;
+    btn.onclick = ()=> selectMember(name);
+    container.appendChild(btn);
+    idx++;
   });
 }
 function selectMember(name){
@@ -178,9 +203,9 @@ function markComplete(idx){
     task.completed = true;
     members[selectedMember].hearts += task.difficulty;
     // Check for reward:
-    if(members[selectedMember].hearts >= rewardTarget && !members[selectedMember].reward){
+    if(members[selectedMember].hearts >= members[selectedMember].rewardTarget && !members[selectedMember].reward){
       members[selectedMember].reward = true;
-      setTimeout(()=>alert(`${selectedMember} earned enough hearts! 🎉 Reward: ${rewardName}`), 150);
+      setTimeout(()=>alert(`${selectedMember} earned enough hearts for their reward: 🎁 ${members[selectedMember].gift}`), 160);
     }
   }
   saveMembers();
@@ -190,25 +215,25 @@ function markComplete(idx){
 
 // Dashboard with progress bar and reward triggers
 function updateSummary(){
-  document.getElementById('rewardInput').value = rewardTarget;
-  document.getElementById('rewardNameInput').value = rewardName;
   let container = document.getElementById('summaryList');
   container.innerHTML = "";
   Object.keys(members).forEach(name=>{
-    let heartsEarned = members[name].hearts||0;
-    let progressPerc = Math.min(heartsEarned/rewardTarget,1)*100;
-    let rewardGot = !!members[name].reward && heartsEarned>=rewardTarget;
+    let M = members[name];
+    let heartsEarned = M.hearts||0;
+    let progressPerc = Math.min(heartsEarned/M.rewardTarget,1)*100;
+    let rewardGot = !!M.reward && heartsEarned>=M.rewardTarget;
     let outer = document.createElement('div');
     outer.className = "member";
-    let bar = `<div class="pb-container"><div class="pb-bar" style="width:${progressPerc}%;"></div></div>`;
-    outer.innerHTML = `<b>${name}</b><br>
-      <span class="hearts">${"❤️".repeat(Math.min(heartsEarned,30))}</span>
-      <br>Hearts: <b>${heartsEarned}</b> / ${rewardTarget}
+    outer.style.background = M.color+"22";
+    let bar = `<div class="pb-container"><div class="pb-bar" style="width:${progressPerc}%;background:${M.color||'#ff6f61'}"></div></div>`;
+    outer.innerHTML = `<b>${name}</b> <span style="font-size:1.07em;">🎁 <b>${M.gift||"–"}</b></span>
+      <br><span class="hearts">${"❤️".repeat(Math.min(heartsEarned,30))}</span>
+      <br>Hearts: <b>${heartsEarned}</b> / <b>${M.rewardTarget}</b> needed
       ${bar}
-      ${rewardGot ? `<div class="reward">🎁 ${rewardName} unlocked!</div>`:""}`;
+      ${rewardGot ? `<div class="reward">Unlocked! 🎉 (${M.gift})</div>`:""}`;
     container.appendChild(outer);
   });
-  // Animate progress bars:
+  // Animate bars:
   setTimeout(() => {
     document.querySelectorAll('.pb-bar').forEach(bar=>{
       bar.style.transition = 'width 1s cubic-bezier(.4,2,.6,1)';
@@ -220,4 +245,3 @@ updateSummary();
 </script>
 </body>
 </html>
-
