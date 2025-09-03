@@ -18,21 +18,17 @@
       cursor:pointer; font-weight:600; margin:2px;
       border: none;
       transition: background 0.18s, color 0.18s, transform .11s;
-      font-size:1em;
-      min-width: 0; width:auto;
-      outline: none;
+      font-size:1em; min-width: 0; width:auto;
       color: white;
-      /* colors set inline */
     }
     .member-btn.selected {
       border: 2.5px solid #2228;
       transform: scale(1.06);
     }
     .member-btn:active {transform:scale(.96);}
-
     button, select, input[type="text"], input[type="date"], input[type="number"] { margin:7px 2px; padding:10px; border-radius:8px; border:none; font-size:1.05em;}
     button:not(.member-btn) { background:#ff6f61; color:#fff; cursor:pointer; font-weight: 700;}
-    button:not(.member-btn):hover { background:#ff3b2f;}
+    button:not(.member-btn):hover, .complete-btn:hover { background:#ff3b2f;}
     input[type='range'] { width:120px;}
     .hearts { color:#ff4a3a; font-size:1.13em; display:inline-block; font-weight:900; vertical-align:-2px; animation:pulse .9s infinite alternate;}
     .task { display:flex; justify-content:space-between; align-items:center; background:#f5fff7; padding:10px 8px; margin:10px 0; border-radius:12px; box-shadow:0 1px 5px #0001;}
@@ -49,20 +45,40 @@
       main{padding:8px;}
       .member-list{flex-direction:column;gap:6px;}
     }
-    /* Hide number arrows for input[type=number] on mobile */
     input[type=number]::-webkit-inner-spin-button, 
     input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     input[type=number] { -moz-appearance: textfield; }
+    .tiny-instructions {
+      background:#fff3; border-radius:12px; padding:6px 16px; margin:12px 0 18px 0; font-weight:500; color:#444; font-size:1.07em; text-align:center;
+    }
+    .editinputs input, .editinputs select {
+      margin: 2px 2px 2px 0;
+      padding: 4px 7px;
+      border-radius: 6px;
+      font-size: .98em;
+    }
+    .edit-btn, .del-btn {
+      margin-left: 6px; font-size: .99em;
+      padding: 6px 11px!important;
+      border-radius:8px!important;
+    }
+    .edit-btn { background: #ffc107!important; color: #222; }
+    .del-btn { background: #e67c7c!important; color: #fff;}
+    .save-btn { background: #3bb855!important; color: #fff;}
+    .cancel-btn {background: #bbb!important; color: #333;}
   </style>
 </head>
 <body>
 <header>KakaReza Tasks</header>
 <main>
+  <div class="tiny-instructions">
+    Add a member, assign chores, and earn your reward!
+  </div>
   <div class="section">
     <h2>Add a Family Member</h2>
-    <input type="text" id="memberName" placeholder="Enter name" style="width:170px"/>
-    <input type="text" id="giftName" placeholder="Reward/Gift (e.g. Bike)" style="width:130px"/>
-    <input type="number" id="memberRewardTarget" min="1" max="999" value="30" style="width:70px" />
+    <input type="text" id="memberName" placeholder="Enter name" style="width:150px"/>
+    <input type="text" id="giftName" placeholder="Reward/Gift (e.g. Bike)" style="width:110px"/>
+    <input type="number" id="memberRewardTarget" min="1" max="999" value="30" style="width:60px" />
     <button onclick="addMember()">Add Member</button>
     <br><small>Each member: Name, their dream reward, and hearts needed!</small>
     <div class="member-list" id="memberList"></div>
@@ -88,8 +104,6 @@
 let choreList = [
 "Make your bed","Feed the pets","Pick up toys","Brush teeth","Put away dirty clothes","Set the table","Clear the table","Water houseplants","Pack backpack","Sweep kitchen","Wipe counters","Help with groceries","Fold laundry","Put away clean dishes","Take out trash","Recycling","Dust shelves","Match socks","Brush hair","Help unpack groceries","Organize shoes","Help mom with shopping list","Help dad put tools away","Sharpen pencils","Straighten couch cushions","Wipe doorknobs","Help make lunch","Help pack snacks","Load dishwasher","Unload dishwasher","Wipe mirrors","Tidy entryway","Help sweep porch","Feed fish","Brush dog/cat","Rake leaves","Pick up sticks in yard","Weed garden","Water outside plants","Sweep garage","Clean car handles","Wipe table","Help mom sort mail","Help dad collect laundry","Make sibling’s bed","Sort socks","Wipe baseboards","Pick up yard toys","Put napkins on table","Take dirty towels to laundry","Empty small trash cans","Fill pet water bowl","Wipe up spills","Fold towels","Help put away groceries","Straighten play area","Clean up arts+crafts","Put sports kits away","Stack books neatly","Polish shoes","Rinse bath toys","Wash fruit & veggies","Turn off TV when done","Help dad sweep patio","Pick up after picnic","Help mom check lists","Offer water to guests","Shake out mats","Wipe refrigerator handles","Practice reading to parent","Make lunch for school","Wipe appliance fronts","Help dad pull weeds","Help mom water garden","Sweep walkways","Collect sticks in yard","Organize DVDs/games","Help dad with computer","Help mom sort recycling","Make cards for family","Brush doormat","Care for indoor plants","Pick up fallen leaves","Fill bird feeder","Organize board games","Help mom cook dinner","Help dad check garage","Get the mail","Put dishes in sink","Help prep salad","Tidy bathroom counter","Wash windows (low)","Empty lunchbox after school","Help dad with emails","Help mom with phone calls","Organize magazine rack","Help dad carry tools","Tidy shoes at door","Carry groceries up steps","Pat dog/cat gently"
 ];
-
-// Distinct colors for user "buttons"
 function getColorForIndex(i){
   const colors = [
     "#ff6561","#67b7dc","#ffae00","#62b482",
@@ -97,14 +111,9 @@ function getColorForIndex(i){
   ];
   return colors[i%colors.length];
 }
-
 let members = {};
 let selectedMember = null;
-
-// Load from localStorage
 if(localStorage.getItem('kakar-members2')) members = JSON.parse(localStorage.getItem('kakar-members2'));
-
-// Populate chore dropdown
 const choreSelect = document.getElementById('choreSelect');
 function fillChores(){
   choreSelect.innerHTML = "";
@@ -115,17 +124,12 @@ function fillChores(){
   });
 }
 fillChores();
-
-// Hearts slider logic
 function updateSlider(val){
   document.getElementById('rangeVal').innerText = val;
   document.getElementById('heartsDisplay').innerHTML = "❤️".repeat(val);
 }
 updateSlider(document.getElementById('difficultyRange').value);
-
-// Save to localStorage
 function saveMembers(){ localStorage.setItem('kakar-members2',JSON.stringify(members)); }
-
 function addMember(){
   const name = document.getElementById('memberName').value.trim();
   const gift = document.getElementById('giftName').value.trim() || "Surprise!";
@@ -136,7 +140,6 @@ function addMember(){
   saveMembers();
   updateMemberList();
   updateSummary();
-  // Clear inputs after adding
   document.getElementById('memberName').value = '';
   document.getElementById('giftName').value = '';
   document.getElementById('memberRewardTarget').value = '30';
@@ -173,6 +176,7 @@ function assignChore(){
   updateTaskList();
   updateSummary();
 }
+// --- BEGIN: EDIT AND DELETE TASK LOGIC WITH UI ---
 function updateTaskList(){
   const container = document.getElementById('assignedTasks');
   container.innerHTML = "";
@@ -180,29 +184,83 @@ function updateTaskList(){
     let div = document.createElement('div');
     div.className = 'task';
     let hearts = "❤️".repeat(task.difficulty);
-    div.innerHTML = `<div>
-      <strong>${task.name}</strong> <br>
-      <span class="hearts">${hearts}</span>
-      <small>(Assigned ${task.assigned}${task.due?`, Due: ${task.due}`:""})</small>
-    </div>`;
-    if(!task.completed){
-      let btn = document.createElement('button');
-      btn.textContent = 'Mark Complete';
-      btn.className = 'complete-btn';
-      btn.onclick = ()=> markComplete(i);
-      div.appendChild(btn);
+    if(task.editing){
+      // Edit mode
+      div.innerHTML = `
+        <span class="editinputs">
+          <input type="text" value="${task.name}" id="editName${i}" style="width:120px"/>
+          <input type="date" value="${task.due || ""}" id="editDue${i}"/>
+          <input type="number" min="1" max="10" value="${task.difficulty}" id="editDiff${i}" style="width:51px"/>
+          <button class="save-btn" onclick="saveEditTask(${i})">Save</button>
+          <button class="cancel-btn" onclick="cancelEditTask(${i})">Cancel</button>
+        </span>
+      `;
     } else {
-      div.innerHTML += `<div class="hearts">✅ Completed</div>`;
+      div.innerHTML = `<div>
+        <strong>${task.name}</strong><br>
+        <span class="hearts">${hearts}</span>
+        <small>(Assigned ${task.assigned}${task.due?`, Due: ${task.due}`:""})</small>
+      </div>`;
+      if(!task.completed){
+        let btn = document.createElement('button');
+        btn.textContent = 'Mark Complete';
+        btn.className = 'complete-btn';
+        btn.onclick = ()=> markComplete(i);
+        div.appendChild(btn);
+
+        // Edit and Delete buttons
+        let editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.className='edit-btn';
+        editBtn.onclick = ()=> editTask(i);
+        div.appendChild(editBtn);
+
+        let delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.className='del-btn';
+        delBtn.onclick = ()=> deleteTask(i);
+        div.appendChild(delBtn);
+
+      } else {
+        div.innerHTML += `<div class="hearts">✅ Completed</div>`;
+      }
     }
     container.appendChild(div);
   });
 }
+function editTask(i){
+  members[selectedMember].tasks[i].editing = true;
+  updateTaskList();
+}
+function deleteTask(i){
+  members[selectedMember].tasks.splice(i, 1);
+  saveMembers();
+  updateTaskList();
+  updateSummary();
+}
+function saveEditTask(i){
+  let task = members[selectedMember].tasks[i];
+  let newName = document.getElementById('editName'+i).value.trim() || task.name;
+  let newDue = document.getElementById('editDue'+i).value;
+  let newDiff = parseInt(document.getElementById('editDiff'+i).value)||task.difficulty;
+  task.name = newName;
+  task.due = newDue;
+  task.difficulty = newDiff;
+  delete task.editing;
+  saveMembers();
+  updateTaskList();
+  updateSummary();
+}
+function cancelEditTask(i){
+  delete members[selectedMember].tasks[i].editing;
+  updateTaskList();
+}
+// --- END: EDIT AND DELETE TASK LOGIC ---
 function markComplete(idx){
   let task = members[selectedMember].tasks[idx];
   if(!task.completed){
     task.completed = true;
     members[selectedMember].hearts += task.difficulty;
-    // Check for reward:
     if(members[selectedMember].hearts >= members[selectedMember].rewardTarget && !members[selectedMember].reward){
       members[selectedMember].reward = true;
       setTimeout(()=>alert(`${selectedMember} earned enough hearts for their reward: 🎁 ${members[selectedMember].gift}`), 160);
@@ -212,8 +270,6 @@ function markComplete(idx){
   updateTaskList();
   updateSummary();
 }
-
-// Dashboard with progress bar and reward triggers
 function updateSummary(){
   let container = document.getElementById('summaryList');
   container.innerHTML = "";
@@ -233,7 +289,6 @@ function updateSummary(){
       ${rewardGot ? `<div class="reward">Unlocked! 🎉 (${M.gift})</div>`:""}`;
     container.appendChild(outer);
   });
-  // Animate bars:
   setTimeout(() => {
     document.querySelectorAll('.pb-bar').forEach(bar=>{
       bar.style.transition = 'width 1s cubic-bezier(.4,2,.6,1)';
